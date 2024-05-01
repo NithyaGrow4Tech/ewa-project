@@ -77,9 +77,15 @@ const transporter = nodemailer.createTransport({
 });
 
 
-const users = [
-    { email: 'backendwork00@gmail.com', otp: '', verified: false }
-];
+const users = [];
+
+// Function to generate OTP with expiry
+function generateOTP(email) {
+    const otp = otpGenerator.generate(6, { digits: true, alphabets: false, upperCase: false, specialChars: false });
+    const expiry = new Date();
+    expiry.setMinutes(expiry.getMinutes() + 5); // Set OTP expiry to 5 minutes from now
+    return { otp, expiry };
+}
 
 
 app.use(bodyParser.json());
@@ -95,9 +101,10 @@ app.post('/send-otp', (req, res) => {
         users.push(user);
     }
 
-    // Generate OTP
-    user.otp = otpGenerator.generate(6, { digits: true, alphabets: false, upperCase: false, specialChars: false });
-
+    // Generate OTP with expiry
+    const { otp, expiry } = generateOTP(email);
+    user.otp = otp;
+    user.otpExpiry = expiry;
 
     const mailOptions = {
         from: 'nithyaa.work@gmail.com',
@@ -125,11 +132,15 @@ app.post('/verify-otp', (req, res) => {
 
     const user = users.find(u => u.email === email);
 
-    if (!user || user.otp !== otp) {
+    // Check if user and OTP are valid
+    if (!user || user.otp !== otp || new Date() > new Date(user.otpExpiry)) {
         res.status(401).send('Invalid OTP.');
     } else {
-
         user.verified = true;
+
+        // Once verified, remove OTP and expiry from memory
+        delete user.otp;
+        delete user.otpExpiry;
 
 
         const token = jwt.sign({ email: user.email }, 'yourSecretKey', { expiresIn: '1h' });
