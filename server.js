@@ -4,6 +4,7 @@ const bodyParser = require('body-parser');
 const adminRoutes = require('./routes/admin');
 const port = 3000;
 
+const rateLimit = require('express-rate-limit');
 const connectDB = require('./db');
 const User = require('./models/User');
 const fs = require('fs');
