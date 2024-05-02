@@ -37,6 +37,14 @@ mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopol
 app.use(bodyParser.json());
 app.use('/api/admin', adminRoutes);
 
+// Rate limiting middleware
+const limiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minute
+    max: 100, // 5 requests per windowMs
+    message: 'Too many requests from this IP, please try again later.'
+});
+app.use(limiter); // Apply rate limiting middleware to all routes
+
 
 //make a post request for uploading images
 app.use('/upload-images', upload.array('image'), async (req, res) => {
